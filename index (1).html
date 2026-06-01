@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TutorBook — Đặt lịch học gia sư</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,600;1,400&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+  /* ── Reset & Tokens ────────────────────────── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --ink: #0d1117;
+    --ink2: #3a3f4a;
+    --ink3: #6b7280;
+    --paper: #faf9f6;
+    --paper2: #f0ede6;
+    --paper3: #e4e0d6;
+    --accent: #1a3ef0;
+    --accent-lt: #eef0ff;
+    --accent-dark: #0e27c4;
+    --success: #0f7b4d;
+    --success-lt: #e8f9f0;
+    --warn: #c45d0a;
+    --warn-lt: #fff4e6;
+    --danger: #c0392b;
+    --danger-lt: #feeceb;
+    --radius: 14px;
+    --shadow: 0 2px 12px rgba(0,0,0,0.08);
+    --shadow-lg: 0 8px 40px rgba(0,0,0,0.13);
+    --font-display: 'Fraunces', serif;
+    --font-body: 'Instrument Sans', sans-serif;
+  }
+
+  body {
+    font-family: var(--font-body);
+    background: var(--paper);
+    color: var(--ink);
+    min-height: 100vh;
+  }
+
+  /* ── Animations ────────────────────────────── */
+  @keyframes fadeUp { from { opacity:0; transform:translateY(18px); } to { opacity:1; transform:translateY(0); } }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .fade-up { animation: fadeUp .4s ease both; }
+  .fade-up-2 { animation: fadeUp .4s .08s ease both; }
+  .fade-up-3 { animation: fadeUp .4s .16s ease both; }
+  .fade-up-4 { animation: fadeUp .4s .24s ease both; }
+
+  /* ── Nav ───────────────────────────────────── */
+  nav {
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(250,249,246,0.9);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--paper3);
+    padding: 0 2rem;
+    display: flex; align-items: center; justify-content: space-between;
+    height: 64px;
+  }
+  .logo { font-family: var(--font-display); font-size: 1.4rem; color: var(--ink); letter-spacing: -0.02em; }
+  .logo span { color: var(--accent); }
+  .nav-tabs { display: flex; gap: 4px; }
+  .nav-tab {
+    padding: 7px 16px; border-radius: 8px; font-size: .875rem; font-weight: 500;
+    border: none; background: transparent; cursor: pointer; color: var(--ink3);
+    transition: all .15s;
+  }
+  .nav-tab:hover { background: var(--paper2); color: var(--ink); }
+  .nav-tab.active { background: var(--accent); color: white; }
+  .gs-status {
+    display: flex; align-items: center; gap: 8px;
+    font-size: .8rem; color: var(--ink3);
+  }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--paper3); }
+  .dot.connected { background: var(--success); }
+  .dot.error { background: var(--danger); }
+
+  /* ── Layout ────────────────────────────────── */
+  main { max-width: 1100px; margin: 0 auto; padding: 2.5rem 2rem; }
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* ── Headings ──────────────────────────────── */
+  h1 { font-family: var(--font-display); font-size: 2.6rem; line-height: 1.15; letter-spacing: -0.03em; margin-bottom: .5rem; }
+  h2 { font-family: var(--font-display); font-size: 1.6rem; margin-bottom: 1rem; }
+  .sub { color: var(--ink3); font-size: 1.05rem; margin-bottom: 2rem; }
+
+  /* ── Config banner ─────────────────────────── */
+  .config-banner {
+    background: var(--warn-lt); border: 1px solid #f5c27a; border-radius: var(--radius);
+    padding: 1rem 1.25rem; margin-bottom: 2rem;
+    display: flex; align-items: flex-start; gap: 12px;
+  }
+  .config-banner i { color: var(--warn); margin-top: 2px; flex-shrink: 0; }
+  .config-banner p { font-size: .875rem; color: var(--ink2); line-height: 1.6; }
+  .config-banner code { background: rgba(0,0,0,0.07); padding: 1px 5px; border-radius: 4px; font-size: .82rem; }
+
+  /* ── URL form ──────────────────────────────── */
+  .url-form { display: flex; gap: 10px; margin-bottom: 2rem; flex-wrap: wrap; }
+  .url-input {
+    flex: 1; min-width: 260px; padding: 11px 14px; border-radius: 10px;
+    border: 1.5px solid var(--paper3); background: white; font-family: var(--font-body);
+    font-size: .875rem; color: var(--ink); outline: none; transition: border .15s;
+  }
+  .url-input:focus { border-color: var(--accent); }
+  .btn {
+    padding: 11px 20px; border-radius: 10px; border: none; cursor: pointer;
+    font-family: var(--font-body); font-size: .875rem; font-weight: 600;
+    transition: all .15s; display: inline-flex; align-items: center; gap: 7px;
+  }
+  .btn-primary { background: var(--accent); color: white; }
+  .btn-primary:hover { background: var(--accent-dark); }
+  .btn-primary:active { transform: scale(0.98); }
+  .btn-outline { background: transparent; border: 1.5px solid var(--paper3); color: var(--ink2); }
+  .btn-outline:hover { border-color: var(--ink3); }
+  .btn-danger { background: var(--danger-lt); color: var(--danger); }
+  .btn-sm { padding: 7px 13px; font-size: .8rem; }
+
+  /* ── Grid of tutor cards ───────────────────── */
+  .tutors-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.25rem; }
+  .tutor-card {
+    background: white; border: 1px solid var(--paper3); border-radius: 18px;
+    padding: 1.5rem; cursor: pointer; transition: all .2s;
+    display: flex; flex-direction: column; gap: 1rem;
+  }
+  .tutor-card:hover { border-color: var(--accent); box-shadow: var(--shadow-lg); transform: translateY(-2px); }
+  .tutor-card.selected { border: 2px solid var(--accent); background: var(--accent-lt); }
+  .tutor-top { display: flex; align-items: center; gap: 14px; }
+  .avatar {
+    width: 52px; height: 52px; border-radius: 50%; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-display); font-size: 1.3rem; color: white;
+  }
+  .tutor-name { font-weight: 600; font-size: 1rem; margin-bottom: 2px; }
+  .tutor-sub { font-size: .8rem; color: var(--ink3); }
+  .tutor-meta { display: flex; justify-content: space-between; align-items: center; }
+  .rating { font-size: .85rem; color: var(--warn); }
+  .price-tag { font-size: 1.1rem; font-weight: 700; color: var(--accent); }
+  .level-badge {
+    font-size: .75rem; background: var(--paper2); color: var(--ink2);
+    padding: 3px 9px; border-radius: 20px; font-weight: 500;
+  }
+
+  /* ── Filter bar ────────────────────────────── */
+  .filter-bar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 1.5rem; }
+  .filter-chip {
+    padding: 6px 14px; border-radius: 20px; font-size: .82rem; font-weight: 500;
+    border: 1.5px solid var(--paper3); background: white; cursor: pointer;
+    transition: all .15s; color: var(--ink2);
+  }
+  .filter-chip:hover { border-color: var(--accent); color: var(--accent); }
+  .filter-chip.active { background: var(--accent); border-color: var(--accent); color: white; }
+  .search-box {
+    padding: 8px 14px; border-radius: 10px; border: 1.5px solid var(--paper3);
+    font-family: var(--font-body); font-size: .875rem; width: 220px; outline: none;
+    transition: border .15s;
+  }
+  .search-box:focus { border-color: var(--accent); }
+
+  /* ── Booking form ──────────────────────────── */
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
+  @media(max-width: 640px) { .form-grid { grid-template-columns: 1fr; } }
+  .form-group { display: flex; flex-direction: column; gap: 6px; }
+  label { font-size: .82rem; font-weight: 600; color: var(--ink2); text-transform: uppercase; letter-spacing: .05em; }
+  input, select, textarea {
+    padding: 11px 14px; border-radius: 10px; border: 1.5px solid var(--paper3);
+    font-family: var(--font-body); font-size: .9rem; color: var(--ink); background: white;
+    outline: none; transition: border .15s; width: 100%;
+  }
+  input:focus, select:focus, textarea:focus { border-color: var(--accent); }
+
+  .selected-tutor-card {
+    background: var(--accent-lt); border: 1.5px solid var(--accent);
+    border-radius: var(--radius); padding: 1rem 1.25rem;
+    display: flex; align-items: center; gap: 14px; margin-bottom: 1.5rem;
+  }
+  .summary-box {
+    background: var(--paper2); border-radius: var(--radius); padding: 1.25rem;
+    margin: 1.5rem 0;
+  }
+  .summary-row { display: flex; justify-content: space-between; padding: 5px 0; font-size: .9rem; }
+  .summary-row .lbl { color: var(--ink3); }
+  .summary-row .val { font-weight: 600; }
+  .summary-row.total .val { color: var(--accent); font-size: 1.1rem; }
+  hr.dashed { border: none; border-top: 1px dashed var(--paper3); margin: 8px 0; }
+
+  /* ── Bookings table ────────────────────────── */
+  .table-wrap { overflow-x: auto; border-radius: var(--radius); border: 1px solid var(--paper3); }
+  table { width: 100%; border-collapse: collapse; }
+  thead th {
+    background: var(--ink); color: white; text-align: left;
+    padding: 12px 16px; font-size: .8rem; font-weight: 600;
+    text-transform: uppercase; letter-spacing: .05em; white-space: nowrap;
+  }
+  thead th:first-child { border-radius: 0; }
+  tbody tr { border-bottom: 1px solid var(--paper3); transition: background .1s; }
+  tbody tr:hover { background: var(--paper2); }
+  tbody tr:last-child { border-bottom: none; }
+  td { padding: 13px 16px; font-size: .875rem; vertical-align: middle; }
+  .status-badge {
+    display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: .75rem; font-weight: 600;
+  }
+  .status-confirmed { background: var(--success-lt); color: var(--success); }
+  .status-cancelled { background: var(--danger-lt); color: var(--danger); }
+
+  /* ── Empty / loading states ────────────────── */
+  .empty-state {
+    text-align: center; padding: 3rem 2rem; color: var(--ink3);
+  }
+  .empty-state i { font-size: 2.5rem; margin-bottom: 1rem; color: var(--paper3); }
+  .spinner {
+    width: 32px; height: 32px; border: 3px solid var(--paper3);
+    border-top-color: var(--accent); border-radius: 50%;
+    animation: spin .7s linear infinite; margin: 2rem auto;
+  }
+
+  /* ── Toast ─────────────────────────────────── */
+  #toast {
+    position: fixed; bottom: 2rem; right: 2rem; z-index: 999;
+    background: var(--ink); color: white; padding: 14px 20px;
+    border-radius: var(--radius); font-size: .875rem;
+    box-shadow: var(--shadow-lg); display: none;
+    animation: fadeUp .3s ease;
+  }
+  #toast.success { background: #0d6e45; }
+  #toast.error { background: var(--danger); }
+
+  /* ── Steps ─────────────────────────────────── */
+  .steps { display: flex; gap: 0; margin-bottom: 2rem; }
+  .step { display: flex; align-items: center; gap: 8px; flex: 1; }
+  .step-num {
+    width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center;
+    justify-content: center; font-size: .8rem; font-weight: 700; flex-shrink: 0;
+    background: var(--paper3); color: var(--ink3);
+  }
+  .step.done .step-num { background: var(--success); color: white; }
+  .step.active .step-num { background: var(--accent); color: white; }
+  .step-label { font-size: .8rem; color: var(--ink3); font-weight: 500; }
+  .step.active .step-label { color: var(--accent); font-weight: 600; }
+  .step-line { flex: 1; height: 1px; background: var(--paper3); }
+
+  /* ── Hero ──────────────────────────────────── */
+  .hero {
+    background: var(--ink); color: white; border-radius: 24px;
+    padding: 3rem; margin-bottom: 2.5rem; position: relative; overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse 60% 80% at 80% 50%, rgba(45,58,239,0.4) 0%, transparent 70%);
+  }
+  .hero h1 { color: white; position: relative; }
+  .hero .sub { color: rgba(255,255,255,0.65); position: relative; }
+  .hero-stats {
+    display: flex; gap: 2rem; margin-top: 2rem; position: relative;
+  }
+  .hero-stat .num { font-family: var(--font-display); font-size: 2rem; color: white; }
+  .hero-stat .lbl { font-size: .8rem; color: rgba(255,255,255,0.55); margin-top: 2px; }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="logo">Tutor<span>Book</span></div>
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="showPage('browse')"><i class="fa-solid fa-graduation-cap"></i> Gia sư</button>
+    <button class="nav-tab" onclick="showPage('book')"><i class="fa-solid fa-calendar-plus"></i> Đặt lịch</button>
+    <button class="nav-tab" onclick="showPage('bookings', true)"><i class="fa-solid fa-list-check"></i> Lịch đặt</button>
+    <button class="nav-tab" onclick="showPage('settings')"><i class="fa-solid fa-gear"></i> Cài đặt</button>
+  </div>
+  <div class="gs-status">
+    <div class="dot" id="gs-dot"></div>
+    <span id="gs-label">Chưa kết nối</span>
+  </div>
+</nav>
+
+<main>
+
+  <!-- ── BROWSE PAGE ───────────────────────── -->
+  <div class="page active" id="page-browse">
+    <div class="hero fade-up">
+      <h1>Tìm gia sư<br><em>phù hợp với bạn</em></h1>
+      <p class="sub">Đặt lịch học trực tiếp — dữ liệu lưu về Google Sheets</p>
+      <div class="hero-stats">
+        <div class="hero-stat"><div class="num" id="stat-tutors">6</div><div class="lbl">Gia sư</div></div>
+        <div class="hero-stat"><div class="num" id="stat-bookings">—</div><div class="lbl">Lịch đặt</div></div>
+      </div>
+    </div>
+
+    <div class="filter-bar fade-up-2">
+      <input type="text" class="search-box" placeholder="🔍  Tìm gia sư..." id="search-input" oninput="filterTutors()">
+      <button class="filter-chip active" data-filter="all" onclick="setFilter(this)">Tất cả</button>
+      <button class="filter-chip" data-filter="Mathematics" onclick="setFilter(this)">Toán</button>
+      <button class="filter-chip" data-filter="Physics" onclick="setFilter(this)">Vật lý</button>
+      <button class="filter-chip" data-filter="Biology" onclick="setFilter(this)">Sinh học</button>
+      <button class="filter-chip" data-filter="Statistics" onclick="setFilter(this)">Thống kê</button>
+    </div>
+
+    <div class="tutors-grid fade-up-3" id="tutors-grid">
+      <div class="spinner"></div>
+    </div>
+  </div>
+
+  <!-- ── BOOK PAGE ─────────────────────────── -->
+  <div class="page" id="page-book">
+    <h2 class="fade-up">Đặt lịch học</h2>
+
+    <div class="steps fade-up-2">
+      <div class="step done" id="step-1"><div class="step-num">1</div><span class="step-label">Chọn gia sư</span></div>
+      <div class="step-line"></div>
+      <div class="step active" id="step-2"><div class="step-num">2</div><span class="step-label">Thông tin</span></div>
+      <div class="step-line"></div>
+      <div class="step" id="step-3"><div class="step-num">3</div><span class="step-label">Xác nhận</span></div>
+    </div>
+
+    <!-- No tutor selected -->
+    <div id="no-tutor-msg">
+      <div class="config-banner">
+        <i class="fa-solid fa-circle-info"></i>
+        <p>Vui lòng chọn gia sư từ trang <strong>Gia sư</strong> trước, sau đó quay lại đây để điền thông tin đặt lịch.</p>
+      </div>
+      <button class="btn btn-primary" onclick="showPage('browse')"><i class="fa-solid fa-arrow-left"></i> Chọn gia sư</button>
+    </div>
+
+    <!-- Form -->
+    <div id="book-form-wrap" style="display:none">
+      <div class="selected-tutor-card" id="selected-tutor-card"></div>
+
+      <div class="form-grid fade-up-3">
+        <div class="form-group">
+          <label>Họ và tên học sinh</label>
+          <input type="text" id="f-name" placeholder="Nguyễn Văn An">
+        </div>
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" id="f-email" placeholder="email@example.com">
+        </div>
+        <div class="form-group">
+          <label>Ngày học</label>
+          <input type="date" id="f-date">
+        </div>
+        <div class="form-group">
+          <label>Giờ học</label>
+          <select id="f-time">
+            <option value="08:00">08:00 SA</option>
+            <option value="09:00">09:00 SA</option>
+            <option value="10:00">10:00 SA</option>
+            <option value="11:00">11:00 SA</option>
+            <option value="13:00">01:00 CH</option>
+            <option value="14:00">02:00 CH</option>
+            <option value="15:00">03:00 CH</option>
+            <option value="16:00">04:00 CH</option>
+            <option value="17:00">05:00 CH</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Thời lượng</label>
+          <select id="f-duration" onchange="updateSummary()">
+            <option value="60">60 phút</option>
+            <option value="90">90 phút</option>
+            <option value="120">120 phút</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Môn học</label>
+          <input type="text" id="f-subject" readonly>
+        </div>
+      </div>
+
+      <div class="summary-box fade-up-4" id="summary-box">
+        <div class="summary-row"><span class="lbl">Gia sư</span><span class="val" id="sum-tutor">—</span></div>
+        <div class="summary-row"><span class="lbl">Môn</span><span class="val" id="sum-subject">—</span></div>
+        <div class="summary-row"><span class="lbl">Thời lượng</span><span class="val" id="sum-dur">60 phút</span></div>
+        <div class="summary-row"><span class="lbl">Phí gia sư</span><span class="val" id="sum-price">—</span></div>
+        <div class="summary-row"><span class="lbl">Phí dịch vụ</span><span class="val" id="sum-fee">—</span></div>
+        <hr class="dashed">
+        <div class="summary-row total"><span class="lbl" style="font-weight:600;color:var(--ink)">Tổng cộng</span><span class="val" id="sum-total">—</span></div>
+      </div>
+
+      <button class="btn btn-primary" style="width:100%;justify-content:center;padding:14px;" id="submit-btn" onclick="submitBooking()">
+        <i class="fa-solid fa-lock"></i> Xác nhận & Lưu vào Google Sheets
+      </button>
+      <p style="text-align:center;font-size:.78rem;color:var(--ink3);margin-top:8px">Dữ liệu sẽ được lưu trực tiếp vào Google Sheets của bạn</p>
+    </div>
+  </div>
+
+  <!-- ── BOOKINGS PAGE ──────────────────────── -->
+  <div class="page" id="page-bookings">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;">
+      <h2 style="margin:0">Danh sách lịch đặt</h2>
+      <button class="btn btn-outline" onclick="loadBookings()"><i class="fa-solid fa-rotate-right"></i> Làm mới</button>
+    </div>
+    <div id="bookings-content">
+      <div class="empty-state">
+        <i class="fa-solid fa-link-slash"></i>
+        <p>Chưa kết nối Google Sheets.<br>Vào <strong>Cài đặt</strong> để nhập URL.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SETTINGS PAGE ─────────────────────── -->
+  <div class="page" id="page-settings">
+    <h2 class="fade-up">Cài đặt kết nối Google Sheets</h2>
+    <p class="sub fade-up-2">Làm theo các bước sau để kết nối ứng dụng với Google Sheets của bạn.</p>
+
+    <div class="config-banner fade-up-2">
+      <i class="fa-solid fa-triangle-exclamation"></i>
+      <p>
+        Bạn cần tạo Google Apps Script và triển khai nó dưới dạng Web App. Xem hướng dẫn bên dưới.
+      </p>
+    </div>
+
+    <div style="background:white;border:1px solid var(--paper3);border-radius:18px;padding:2rem;margin-bottom:1.5rem;" class="fade-up-3">
+      <h3 style="font-size:1rem;font-weight:600;margin-bottom:1.25rem;color:var(--ink2);">
+        <i class="fa-solid fa-list-ol" style="color:var(--accent);margin-right:8px"></i>Hướng dẫn cài đặt
+      </h3>
+      <ol style="padding-left:1.25rem;display:flex;flex-direction:column;gap:.75rem;font-size:.9rem;color:var(--ink2);line-height:1.7;">
+        <li>Mở <strong><a href="https://sheets.new" target="_blank" style="color:var(--accent)">sheets.new</a></strong> để tạo Google Sheet mới. Copy Sheet ID từ URL (phần giữa <code>/d/</code> và <code>/edit</code>).</li>
+        <li>Mở <strong><a href="https://script.google.com" target="_blank" style="color:var(--accent)">script.google.com</a></strong> → Tạo project mới → Dán nội dung file <code>Code.gs</code> vào.</li>
+        <li>Thay <code>SHEET_ID = ''</code> bằng ID sheet của bạn ở bước 1.</li>
+        <li>Chạy hàm <code>setupSheets()</code> một lần để tạo các sheet và dữ liệu mẫu.</li>
+        <li>Vào <strong>Deploy → New deployment</strong> → Chọn <em>Web app</em> → Execute as: <em>Me</em> → Access: <em>Anyone</em> → Deploy.</li>
+        <li>Copy URL Web App và dán vào ô bên dưới.</li>
+      </ol>
+    </div>
+
+    <div class="form-group fade-up-4" style="margin-bottom:1rem;">
+      <label>Google Apps Script Web App URL</label>
+      <input type="url" id="gs-url-input" placeholder="https://script.google.com/macros/s/xxx/exec">
+    </div>
+    <div style="display:flex;gap:10px;">
+      <button class="btn btn-primary" onclick="saveGsUrl()"><i class="fa-solid fa-floppy-disk"></i> Lưu & Kiểm tra kết nối</button>
+      <button class="btn btn-outline" onclick="clearGsUrl()"><i class="fa-solid fa-trash"></i> Xoá</button>
+    </div>
+
+    <div id="test-result" style="margin-top:1rem;"></div>
+  </div>
+
+</main>
+
+<div id="toast"></div>
+
+<script>
+// ── State ───────────────────────────────────────
+const COLORS = ['#1a3ef0','#e05c2a','#1a8a5a','#7c3aed','#b45309','#0e7490'];
+let tutors = [];
+let selectedTutor = null;
+let currentFilter = 'all';
+let gsUrl = localStorage.getItem('tutorbook_gs_url') || '';
+
+// ── Init ────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  // Set min date for booking
+  const dateInput = document.getElementById('f-date');
+  dateInput.min = new Date().toISOString().split('T')[0];
+  dateInput.value = new Date(Date.now() + 86400000).toISOString().split('T')[0];
+
+  // Load GS URL
+  if (gsUrl) {
+    document.getElementById('gs-url-input').value = gsUrl;
+    updateGsStatus('connecting');
+    loadTutors();
+  } else {
+    loadDefaultTutors();
+  }
+});
+
+// ── Navigation ──────────────────────────────────
+function showPage(page, refresh) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  document.querySelectorAll('.nav-tab')[['browse','book','bookings','settings'].indexOf(page)].classList.add('active');
+  if (page === 'bookings' && (refresh || gsUrl)) loadBookings();
+}
+
+// ── GS Connection ───────────────────────────────
+function updateGsStatus(state, msg) {
+  const dot = document.getElementById('gs-dot');
+  const lbl = document.getElementById('gs-label');
+  dot.className = 'dot';
+  if (state === 'connected') { dot.classList.add('connected'); lbl.textContent = msg || 'Đã kết nối'; }
+  else if (state === 'error') { dot.classList.add('error'); lbl.textContent = msg || 'Lỗi kết nối'; }
+  else { lbl.textContent = 'Đang kết nối...'; }
+}
+
+function saveGsUrl() {
+  const url = document.getElementById('gs-url-input').value.trim();
+  if (!url) { showToast('Vui lòng nhập URL', 'error'); return; }
+  gsUrl = url;
+  localStorage.setItem('tutorbook_gs_url', url);
+  updateGsStatus('connecting');
+  loadTutors(true);
+}
+
+function clearGsUrl() {
+  gsUrl = '';
+  localStorage.removeItem('tutorbook_gs_url');
+  document.getElementById('gs-url-input').value = '';
+  updateGsStatus('error', 'Chưa kết nối');
+  loadDefaultTutors();
+}
+
+// ── API Calls ───────────────────────────────────
+async function callGS(params) {
+  if (!gsUrl) throw new Error('No GS URL configured');
+  const qs = new URLSearchParams(params).toString();
+  const res = await fetch(`${gsUrl}?${qs}`);
+  const data = await res.json();
+  if (data.error) throw new Error(data.error);
+  return data;
+}
+
+// ── Tutors ──────────────────────────────────────
+const DEFAULT_TUTORS = [
+  { id:'T001', name:'Sarah Kim',    subject:'Mathematics',  level:'A-Level & GCSE', rating:4.9, reviews:84,  price:35 },
+  { id:'T002', name:'Mark Osei',    subject:'Physics',      level:'IB / A-Level',   rating:4.8, reviews:61,  price:40 },
+  { id:'T003', name:'Priya Nair',   subject:'Biology',      level:'GCSE',           rating:4.9, reviews:72,  price:30 },
+  { id:'T004', name:'James Wright', subject:'Statistics',   level:'A-Level',        rating:4.7, reviews:51,  price:38 },
+  { id:'T005', name:'Rania Hassan', subject:'Mathematics',  level:'Further Maths',  rating:5.0, reviews:23,  price:45 },
+  { id:'T006', name:'Lena Schmidt', subject:'Mathematics',  level:'GCSE & 11+',     rating:4.6, reviews:108, price:28 },
+];
+
+function loadDefaultTutors() {
+  tutors = DEFAULT_TUTORS;
+  renderTutors();
+}
+
+async function loadTutors(test) {
+  if (!gsUrl) { loadDefaultTutors(); return; }
+  try {
+    const data = await callGS({ action: 'getTutors' });
+    tutors = data.length ? data : DEFAULT_TUTORS;
+    updateGsStatus('connected');
+    if (test) {
+      document.getElementById('test-result').innerHTML =
+        `<div style="padding:12px 16px;background:var(--success-lt);border-radius:10px;color:var(--success);font-size:.875rem;font-weight:500;">
+          <i class="fa-solid fa-check-circle"></i> Kết nối thành công! Tìm thấy ${tutors.length} gia sư.
+        </div>`;
+    }
+  } catch(e) {
+    tutors = DEFAULT_TUTORS;
+    updateGsStatus('error', 'Lỗi kết nối');
+    if (test) {
+      document.getElementById('test-result').innerHTML =
+        `<div style="padding:12px 16px;background:var(--danger-lt);border-radius:10px;color:var(--danger);font-size:.875rem;">
+          <i class="fa-solid fa-circle-xmark"></i> Lỗi: ${e.message}. Đang dùng dữ liệu mẫu.
+        </div>`;
+    }
+  }
+  renderTutors();
+}
+
+function renderTutors(list) {
+  const grid = document.getElementById('tutors-grid');
+  const toShow = list || tutors;
+  document.getElementById('stat-tutors').textContent = tutors.length;
+  if (!toShow.length) {
+    grid.innerHTML = `<div class="empty-state"><i class="fa-solid fa-user-slash"></i><p>Không tìm thấy gia sư.</p></div>`;
+    return;
+  }
+  grid.innerHTML = toShow.map((t, i) => `
+    <div class="tutor-card fade-up" style="animation-delay:${i*0.05}s" onclick="selectTutor('${t.id}')">
+      <div class="tutor-top">
+        <div class="avatar" style="background:${COLORS[i % COLORS.length]}">${t.name[0]}</div>
+        <div>
+          <div class="tutor-name">${t.name}</div>
+          <div class="tutor-sub">${t.subject}</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;">
+        <span class="level-badge">${t.level}</span>
+      </div>
+      <div class="tutor-meta">
+        <span class="rating">★ ${t.rating} <span style="color:var(--ink3)">(${t.reviews} đánh giá)</span></span>
+        <span class="price-tag">$${t.price}/giờ</span>
+      </div>
+    </div>
+  `).join('');
+}
+
+function setFilter(el) {
+  document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  currentFilter = el.dataset.filter;
+  filterTutors();
+}
+
+function filterTutors() {
+  const q = document.getElementById('search-input').value.toLowerCase();
+  let result = tutors;
+  if (currentFilter !== 'all') result = result.filter(t => t.subject === currentFilter);
+  if (q) result = result.filter(t => t.name.toLowerCase().includes(q) || t.subject.toLowerCase().includes(q));
+  renderTutors(result);
+}
+
+function selectTutor(id) {
+  selectedTutor = tutors.find(t => t.id == id) || tutors.find(t => String(t.id) === String(id));
+  if (!selectedTutor) return;
+  showPage('book');
+  renderBookForm();
+}
+
+function renderBookForm() {
+  const t = selectedTutor;
+  const colorIdx = tutors.indexOf(t);
+  document.getElementById('no-tutor-msg').style.display = 'none';
+  document.getElementById('book-form-wrap').style.display = 'block';
+  document.getElementById('selected-tutor-card').innerHTML = `
+    <div class="avatar" style="background:${COLORS[colorIdx % COLORS.length]};width:44px;height:44px;font-size:1.1rem">${t.name[0]}</div>
+    <div>
+      <div style="font-weight:600">${t.name}</div>
+      <div style="font-size:.8rem;color:var(--ink3)">${t.subject} · ${t.level}</div>
+    </div>
+    <div style="margin-left:auto;font-weight:700;color:var(--accent);font-size:1.1rem">$${t.price}/giờ</div>
+  `;
+  document.getElementById('f-subject').value = t.subject;
+  updateSummary();
+}
+
+function updateSummary() {
+  if (!selectedTutor) return;
+  const t = selectedTutor;
+  const dur = parseInt(document.getElementById('f-duration').value);
+  const hrs = dur / 60;
+  const lesson = +(t.price * hrs).toFixed(2);
+  const fee = +(lesson * 0.07).toFixed(2);
+  const total = +(lesson + fee).toFixed(2);
+  document.getElementById('sum-tutor').textContent = t.name;
+  document.getElementById('sum-subject').textContent = t.subject;
+  document.getElementById('sum-dur').textContent = dur + ' phút';
+  document.getElementById('sum-price').textContent = '$' + lesson.toFixed(2);
+  document.getElementById('sum-fee').textContent = '$' + fee.toFixed(2);
+  document.getElementById('sum-total').textContent = '$' + total.toFixed(2);
+}
+
+// ── Booking Submission ──────────────────────────
+async function submitBooking() {
+  const name = document.getElementById('f-name').value.trim();
+  const email = document.getElementById('f-email').value.trim();
+  const date = document.getElementById('f-date').value;
+  const time = document.getElementById('f-time').value;
+  const dur = document.getElementById('f-duration').value;
+
+  if (!name || !email || !date) {
+    showToast('Vui lòng điền đầy đủ thông tin', 'error'); return;
+  }
+  if (!selectedTutor) {
+    showToast('Vui lòng chọn gia sư', 'error'); return;
+  }
+
+  const t = selectedTutor;
+  const hrs = parseInt(dur) / 60;
+  const price = +(t.price * hrs).toFixed(2);
+
+  const btn = document.getElementById('submit-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang lưu...';
+
+  const params = {
+    action: 'addBooking',
+    studentName: name,
+    studentEmail: email,
+    tutorName: t.name,
+    subject: t.subject,
+    date, time,
+    duration: dur,
+    price: price
+  };
+
+  if (gsUrl) {
+    try {
+      await callGS(params);
+      showToast('✅ Đã lưu vào Google Sheets!', 'success');
+    } catch(e) {
+      showToast('Lưu thất bại: ' + e.message, 'error');
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fa-solid fa-lock"></i> Xác nhận & Lưu vào Google Sheets';
+      return;
+    }
+  } else {
+    // Demo mode — just show success
+    await new Promise(r => setTimeout(r, 900));
+    showToast('✅ Đặt lịch thành công! (Demo - chưa kết nối GS)', 'success');
+  }
+
+  // Reset form
+  document.getElementById('f-name').value = '';
+  document.getElementById('f-email').value = '';
+  selectedTutor = null;
+  document.getElementById('no-tutor-msg').style.display = 'block';
+  document.getElementById('book-form-wrap').style.display = 'none';
+  btn.disabled = false;
+  btn.innerHTML = '<i class="fa-solid fa-lock"></i> Xác nhận & Lưu vào Google Sheets';
+
+  setTimeout(() => showPage('bookings', true), 1200);
+}
+
+// ── Load Bookings ───────────────────────────────
+async function loadBookings() {
+  const container = document.getElementById('bookings-content');
+  if (!gsUrl) {
+    container.innerHTML = `<div class="empty-state"><i class="fa-solid fa-link-slash"></i><p>Chưa kết nối Google Sheets.<br>Vào <strong>Cài đặt</strong> để nhập URL.</p></div>`;
+    return;
+  }
+  container.innerHTML = '<div class="spinner"></div>';
+  try {
+    const data = await callGS({ action: 'getBookings' });
+    document.getElementById('stat-bookings').textContent = data.length;
+    if (!data.length) {
+      container.innerHTML = `<div class="empty-state"><i class="fa-regular fa-calendar-xmark"></i><p>Chưa có lịch đặt nào.</p></div>`;
+      return;
+    }
+    container.innerHTML = `
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th><th>Học sinh</th><th>Email</th><th>Gia sư</th><th>Môn</th><th>Ngày</th><th>Giờ</th><th>Phút</th><th>Giá ($)</th><th>Trạng thái</th><th></th>
+            </tr>
+          </thead>
+          <tbody>
+            ${data.map(b => `
+              <tr>
+                <td style="font-size:.75rem;color:var(--ink3)">${b['ID'] || b.id || '—'}</td>
+                <td><strong>${b['Student Name'] || b.studentName || '—'}</strong></td>
+                <td style="font-size:.8rem;color:var(--ink3)">${b['Student Email'] || b.studentEmail || ''}</td>
+                <td>${b['Tutor'] || b.tutorName || '—'}</td>
+                <td>${b['Subject'] || b.subject || '—'}</td>
+                <td>${b['Date'] || b.date || '—'}</td>
+                <td>${b['Time'] || b.time || '—'}</td>
+                <td>${b['Duration (min)'] || b.duration || '—'}</td>
+                <td>$${b['Price ($)'] || b.price || '—'}</td>
+                <td>
+                  <span class="status-badge ${(b['Status']||b.status||'').toLowerCase() === 'cancelled' ? 'status-cancelled' : 'status-confirmed'}">
+                    ${b['Status'] || b.status || 'Confirmed'}
+                  </span>
+                </td>
+                <td>
+                  ${(b['Status']||b.status||'').toLowerCase() !== 'cancelled' ? `<button class="btn btn-danger btn-sm" onclick="cancelBooking('${b['ID']||b.id}')">Huỷ</button>` : ''}
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    `;
+  } catch(e) {
+    container.innerHTML = `<div class="empty-state"><i class="fa-solid fa-triangle-exclamation"></i><p>Lỗi tải dữ liệu: ${e.message}</p></div>`;
+  }
+}
+
+async function cancelBooking(id) {
+  if (!confirm('Bạn có chắc muốn huỷ lịch này?')) return;
+  try {
+    await callGS({ action: 'cancelBooking', id });
+    showToast('Đã huỷ lịch', 'success');
+    loadBookings();
+  } catch(e) {
+    showToast('Lỗi: ' + e.message, 'error');
+  }
+}
+
+// ── Toast ───────────────────────────────────────
+function showToast(msg, type) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = type || '';
+  t.style.display = 'block';
+  setTimeout(() => t.style.display = 'none', 3500);
+}
+</script>
+</body>
+</html>
